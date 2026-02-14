@@ -119,6 +119,13 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<TreeElement>
   constructor(private scanner: WorkspaceScanner) { }
 
   /**
+   * Get all projects (for external access)
+   */
+  public getProjects(): MagentoProject[] {
+    return this.projects;
+  }
+
+  /**
    * Refresh the tree by rescanning the workspace
    */
   public async refresh(): Promise<void> {
@@ -156,10 +163,10 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<TreeElement>
     }
 
     if (element instanceof ProjectTreeItem) {
-      // Project level: return vendor groups (all modules grouped by vendor)
+      // Project level: return vendor groups
       const vendorMap = new Map<string, MagentoModule[]>();
 
-      // Group all modules by vendor name (no distinction between vendor/custom)
+      // Group all modules by vendor name
       for (const module of element.project.modules) {
         const vendor = module.getVendor();
         if (!vendorMap.has(vendor)) {

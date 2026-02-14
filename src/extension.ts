@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { ProjectTreeProvider } from './ui/projectTreeProvider';
 import { WorkspaceScanner } from './services/workspaceScanner';
+import { ModuleWizard } from './ui/moduleWizard';
 
 let projectTreeProvider: ProjectTreeProvider;
 
@@ -28,6 +30,48 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 
 	context.subscriptions.push(refreshCommand);
+
+	// Register create module command
+	const createModuleCommand = vscode.commands.registerCommand(
+		'magento.createModule',
+		async (uri: vscode.Uri) => {
+			// Get the target path from the context menu
+			const targetPath = uri.fsPath;
+
+			// Verify this is an app/code directory
+			const isAppCode = targetPath.endsWith('app/code') ||
+				targetPath.endsWith('app\\code');
+
+			if (!isAppCode) {
+				vscode.window.showErrorMessage(
+					'Please right-click on an app/code directory'
+				);
+				return;
+			}
+
+			// Find the Magento project this app/code belongs to
+			const projectPath = path.dirname(path.dirname(targetPath)); // Go up from app/code to project root
+			const projects = projectTreeProvider.getProjects();
+			const project = projects.find(p => p.rootPath === projectPath);
+
+			if (!project) {
+				vscode.window.showWarningMessage(
+					'Could not find Magento project. Available modules list may be limited.'
+				);
+			}
+
+			// Run the module creation wizard
+			await ModuleWizard.run(
+				targetPath,
+				project ? project.modules : []
+			);
+
+			// Refresh the tree to show the new module
+			await projectTreeProvider.refresh();
+		}
+	);
+
+	context.subscriptions.push(createModuleCommand);
 
 	// Initial scan
 	await projectTreeProvider.refresh();

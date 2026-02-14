@@ -2,8 +2,12 @@
   "name": "magento-vscode",
   "displayName": "Magento VSCode",
   "description": "VSCode Plugin for better Magento 2 development workflow.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "MatseVH",
+  "repository": {
+    "url": "https://github.com/matse2005/magento-vscode",
+    "type": "git"
+  },
   "preview": true,
   "engines": {
     "vscode": "^1.109.0"
@@ -36,6 +40,10 @@
         "command": "magento.refreshProjects",
         "title": "Magento: Refresh Projects",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "magento.createModule",
+        "title": "Magento: Create New Module"
       }
     ],
     "menus": {
@@ -44,6 +52,13 @@
           "command": "magento.refreshProjects",
           "when": "view == magentoProjects",
           "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "magento.createModule",
+          "when": "explorerResourceIsFolder",
+          "group": "magento@1"
         }
       ]
     }
