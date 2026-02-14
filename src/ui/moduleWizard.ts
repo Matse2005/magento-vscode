@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ModuleConfig, ModuleCreator } from '../services/moduleCreator';
+import { ModuleConfig, ModuleDependency, ModuleCreator } from '../services/moduleCreator';
 import { MagentoModule } from '../domain/magentoModule';
 
 /**
@@ -39,16 +39,23 @@ export class ModuleWizard {
       }
 
       // Step 5: Dependencies
-      const dependencies = await this.promptDependencies(availableModules);
-      if (dependencies === undefined) {
+      const selectedModules = await this.promptDependencies(availableModules);
+      if (selectedModules === undefined) {
         return; // User cancelled
       }
 
-      // Build dependency version map
-      const dependencyVersions = new Map<string, string>();
-      for (const depName of dependencies) {
-        const module = availableModules.find(m => m.name === depName);
+      // Build dependency list with composer info
+      const dependencies: ModuleDependency[] = [];
+      for (const depModuleName of selectedModules) {
+        const module = availableModules.find(m => m.name === depModuleName);
         if (module) {
+          // Get composer name (either from composer.json or fallback)
+          let composerName = module.composerName;
+          if (!composerName) {
+            // Fallback: generate composer name following Magento convention
+            composerName = this.generateComposerName(module.name);
+          }
+
           // Determine version constraint based on module version
           let versionConstraint = '*';
           if (module.version) {
@@ -59,7 +66,12 @@ export class ModuleWizard {
               versionConstraint = `${versionParts[0]}.${versionParts[1]}.*`;
             }
           }
-          dependencyVersions.set(depName, versionConstraint);
+
+          dependencies.push({
+            moduleName: module.name,
+            composerName,
+            version: versionConstraint
+          });
         }
       }
 
@@ -82,8 +94,7 @@ export class ModuleWizard {
         moduleName,
         version,
         license: licenses,
-        dependencies,
-        dependencyVersions
+        dependencies
       };
 
       const creator = new ModuleCreator();
@@ -229,5 +240,24 @@ export class ModuleWizard {
     }
 
     return selected.map(s => s.label);
+  }
+
+  /**
+   * Generate composer package name following Magento convention
+   * This is a fallback when composer.json doesn't exist or doesn't have a name
+   */
+  private static generateComposerName(moduleName: string): string {
+    const parts = moduleName.split('_');
+    if (parts.length !== 2) {
+      return moduleName.toLowerCase();
+    }
+
+    const vendor = parts[0].toLowerCase();
+    const module = parts[1]
+      .replace(/([A-Z])/g, '-$1')  // Insert hyphen before capitals
+      .toLowerCase()
+      .replace(/^-/, '');          // Remove leading hyphen
+
+    return `${vendor}/module-${module}`;
   }
 }

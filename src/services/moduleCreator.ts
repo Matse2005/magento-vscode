@@ -5,12 +5,20 @@ import * as path from 'path';
  * Configuration for creating a new Magento module
  */
 export interface ModuleConfig {
-  packageName: string;      // e.g., "MyCompany"
-  moduleName: string;       // e.g., "CustomModule"
-  version: string;          // e.g., "1.0.0"
-  license: string[];        // e.g., ["OSL-3.0", "AFL-3.0"]
-  dependencies: string[];   // e.g., ["Magento_Catalog", "Magento_Customer"]
-  dependencyVersions: Map<string, string>; // Module name to version mapping
+  packageName: string;
+  moduleName: string;
+  version: string;
+  license: string[];
+  dependencies: ModuleDependency[];
+}
+
+/**
+ * Module dependency with composer package info
+ */
+export interface ModuleDependency {
+  moduleName: string;
+  composerName: string;
+  version: string;
 }
 
 /**
@@ -22,12 +30,17 @@ export class ModuleCreator {
    */
   public static readonly COMMON_LICENSES = [
     { label: 'OSL-3.0', detail: 'Open Software License 3.0 (Magento default)' },
-    { label: 'AFL-3.0', detail: 'Academic Free License 3.0' },
+    { label: 'MPL-2.0', detail: 'Mozilla Public License' },
     { label: 'MIT', detail: 'MIT License' },
-    { label: 'Apache-2.0', detail: 'Apache License 2.0' },
+    { label: 'LGPL-2.1', detail: 'GNU Lesser General Public License v2.1' },
+    { label: 'LGPL-3.0', detail: 'GNU Lesser General Public License v3.0' },
+    { label: 'GPL-2.0', detail: 'GNU General Public License v2.0' },
     { label: 'GPL-3.0', detail: 'GNU General Public License v3.0' },
+    { label: 'BSD-2-Clause', detail: 'BSD 2-Clause License' },
     { label: 'BSD-3-Clause', detail: 'BSD 3-Clause License' },
-    { label: 'Proprietary', detail: 'Proprietary/Commercial License' }
+    { label: 'AFL-3.0', detail: 'Academic Free License 3.0' },
+    { label: 'Apache-2.0', detail: 'Apache License 2.0' },
+    { label: 'Proprietary', detail: 'Proprietary/Commercial License' },
   ];
 
   /**
@@ -123,15 +136,9 @@ ComponentRegistrar::register(
     // Build require object with module dependencies
     const require: Record<string, string> = {};
 
-    // Add selected module dependencies with their versions
+    // Add selected module dependencies with their composer names
     for (const dependency of config.dependencies) {
-      const version = config.dependencyVersions.get(dependency);
-      if (version) {
-        // Convert module name to composer package name
-        // e.g., "Magento_Catalog" -> "magento/module-catalog"
-        const composerPackage = this.convertModuleNameToComposerPackage(dependency);
-        require[composerPackage] = version;
-      }
+      require[dependency.composerName] = dependency.version;
     }
 
     const composerConfig = {
@@ -154,28 +161,6 @@ ComponentRegistrar::register(
   }
 
   /**
-   * Convert Magento module name to composer package name
-   * Examples:
-   * - "Magento_Catalog" -> "magento/module-catalog"
-   * - "Amasty_Blog" -> "amasty/module-blog"
-   * - "MyCompany_CustomModule" -> "mycompany/module-custom-module"
-   */
-  private convertModuleNameToComposerPackage(moduleName: string): string {
-    const parts = moduleName.split('_');
-    if (parts.length !== 2) {
-      return moduleName.toLowerCase();
-    }
-
-    const vendor = parts[0].toLowerCase();
-    const module = parts[1]
-      .replace(/([A-Z])/g, '-$1')  // Insert hyphen before capitals
-      .toLowerCase()
-      .replace(/^-/, '');          // Remove leading hyphen
-
-    return `${vendor}/module-${module}`;
-  }
-
-  /**
    * Create etc/module.xml with dependencies
    */
   private async createModuleXmlFile(
@@ -187,7 +172,7 @@ ComponentRegistrar::register(
     let sequenceXml = '';
     if (config.dependencies.length > 0) {
       const sequenceItems = config.dependencies
-        .map(dep => `        <module name="${dep}"/>`)
+        .map(dep => `        <module name="${dep.moduleName}"/>`)
         .join('\n');
       sequenceXml = `\n        <sequence>\n${sequenceItems}\n        </sequence>`;
     }
@@ -200,7 +185,7 @@ ComponentRegistrar::register(
  */
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
-    <module name="${fullModuleName}" setup_version="${config.version}">${sequenceXml}
+    <module name="${fullModuleName}">${sequenceXml}
     </module>
 </config>
 `;
@@ -238,7 +223,7 @@ bin/magento cache:flush
 \`\`\`
 
 ## Dependencies
-${config.dependencies.length > 0 ? config.dependencies.map(dep => `- ${dep}`).join('\n') : 'None'}
+${config.dependencies.length > 0 ? config.dependencies.map(dep => `- ${dep.moduleName} (${dep.composerName})`).join('\n') : 'None'}
 `;
 
     await this.writeFile(modulePath, 'README.md', content);

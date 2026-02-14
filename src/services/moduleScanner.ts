@@ -166,10 +166,16 @@ export class ModuleScanner {
         return null;
       }
 
-      // Try to get version from composer.json
-      const version = await this.extractModuleVersion(modulePath);
+      // Try to get version and composer name from composer.json
+      const composerInfo = await this.extractComposerInfo(modulePath);
 
-      return new MagentoModule(moduleName, modulePath, type, version);
+      return new MagentoModule(
+        moduleName,
+        modulePath,
+        type,
+        composerInfo.version,
+        composerInfo.name
+      );
     } catch (error) {
       console.warn(`Error detecting module in ${modulePath}:`, error);
       return null;
@@ -200,9 +206,9 @@ export class ModuleScanner {
   }
 
   /**
-   * Extract module version from composer.json
+   * Extract composer package name and version from composer.json
    */
-  private async extractModuleVersion(modulePath: string): Promise<string | undefined> {
+  private async extractComposerInfo(modulePath: string): Promise<{ name?: string, version?: string }> {
     try {
       const composerPath = path.join(modulePath, 'composer.json');
       const composerUri = vscode.Uri.file(composerPath);
@@ -211,10 +217,13 @@ export class ModuleScanner {
       const content = Buffer.from(composerBytes).toString('utf8');
       const composer = JSON.parse(content);
 
-      return composer.version;
+      return {
+        name: composer.name,
+        version: composer.version
+      };
     } catch {
-      // composer.json doesn't exist or has no version
-      return undefined;
+      // composer.json doesn't exist or couldn't be parsed
+      return {};
     }
   }
 }

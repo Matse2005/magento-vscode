@@ -22,16 +22,23 @@ export class MagentoModule {
    */
   public readonly version?: string;
 
+  /**
+   * Composer package name from composer.json (if available)
+   */
+  public readonly composerName?: string;
+
   constructor(
     name: string,
     path: string,
     type: 'vendor' | 'custom',
-    version?: string
+    version?: string,
+    composerName?: string
   ) {
     this.name = name;
     this.path = path;
     this.type = type;
     this.version = version;
+    this.composerName = composerName;
   }
 
   /**
