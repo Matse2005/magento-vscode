@@ -2,7 +2,7 @@
   "name": "magento-vscode",
   "displayName": "Magento VSCode",
   "description": "VSCode Plugin for better Magento 2 development workflow.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "MatseVH",
   "repository": {
     "url": "https://github.com/matse2005/magento-vscode",
@@ -57,7 +57,7 @@
       "explorer/context": [
         {
           "command": "magento.createModule",
-          "when": "explorerResourceIsFolder",
+          "when": "explorerResourceIsFolder && resourcePath =~ /.*[\\\\/]app[\\\\/]code$/",
           "group": "magento@1"
         }
       ]
