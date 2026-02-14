@@ -6,7 +6,7 @@ import { MagentoModule } from '../domain/magentoModule';
 /**
  * Tree item types for the TreeView
  */
-type TreeElement = ProjectTreeItem | ModuleTreeItem;
+type TreeElement = ProjectTreeItem | VendorGroupTreeItem | ModuleTreeItem;
 
 /**
  * Tree item representing a Magento project in the TreeView
@@ -18,7 +18,10 @@ export class ProjectTreeItem extends vscode.TreeItem {
   ) {
     super(project.getDisplayName(), collapsibleState);
 
-    this.tooltip = `${project.rootPath}\n${project.modules.length} modules`;
+    const vendorCount = project.modules.filter(m => m.type === 'vendor').length;
+    const customCount = project.modules.filter(m => m.type === 'custom').length;
+
+    this.tooltip = `${project.rootPath}\n${vendorCount} vendor modules, ${customCount} custom modules`;
     this.description = `${project.modules.length} modules`;
     this.contextValue = 'magentoProject';
 
@@ -37,6 +40,37 @@ export class ProjectTreeItem extends vscode.TreeItem {
 }
 
 /**
+ * Tree item representing a vendor group (e.g., "Magento", "MyCompany")
+ */
+export class VendorGroupTreeItem extends vscode.TreeItem {
+  constructor(
+    public readonly vendorName: string,
+    public readonly modules: MagentoModule[],
+    public readonly collapsibleState: vscode.TreeItemCollapsibleState
+  ) {
+    super(vendorName, collapsibleState);
+
+    const vendorCount = modules.filter(m => m.type === 'vendor').length;
+    const customCount = modules.filter(m => m.type === 'custom').length;
+
+    // Build description showing mix of vendor/custom if applicable
+    let description = `${modules.length} modules`;
+    if (vendorCount > 0 && customCount > 0) {
+      description = `${vendorCount} vendor, ${customCount} custom`;
+    } else if (customCount > 0) {
+      description = `${customCount} custom`;
+    }
+
+    this.tooltip = `${modules.length} modules`;
+    this.description = description;
+    this.contextValue = 'magentoVendorGroup';
+
+    // Set icon for vendor folder
+    this.iconPath = new vscode.ThemeIcon('folder');
+  }
+}
+
+/**
  * Tree item representing a Magento module in the TreeView
  */
 export class ModuleTreeItem extends vscode.TreeItem {
@@ -44,13 +78,16 @@ export class ModuleTreeItem extends vscode.TreeItem {
     public readonly module: MagentoModule,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState
   ) {
-    super(module.name, collapsibleState);
+    // Display only module name (without vendor prefix)
+    const displayName = module.getModuleName();
 
-    const typeLabel = module.type === 'vendor' ? 'Vendor' : 'Custom';
-    const versionInfo = module.version ? ` v${module.version}` : '';
+    super(displayName, collapsibleState);
 
-    this.tooltip = `${module.path}\nType: ${typeLabel}${versionInfo}`;
-    this.description = typeLabel;
+    const typeLabel = module.type === 'custom' ? 'Custom' : 'Vendor';
+    const versionInfo = module.version ? ` • v${module.version}` : '';
+
+    this.tooltip = `${module.name}\n${module.path}\nType: ${typeLabel}${versionInfo}`;
+    this.description = `${typeLabel}${versionInfo}`;
     this.contextValue = `magentoModule.${module.type}`;
 
     // Set icon based on module type
@@ -119,10 +156,39 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<TreeElement>
     }
 
     if (element instanceof ProjectTreeItem) {
-      // Project level: return all modules
-      const modules = element.project.modules.map(module =>
-        new ModuleTreeItem(module, vscode.TreeItemCollapsibleState.None)
-      );
+      // Project level: return vendor groups (all modules grouped by vendor)
+      const vendorMap = new Map<string, MagentoModule[]>();
+
+      // Group all modules by vendor name (no distinction between vendor/custom)
+      for (const module of element.project.modules) {
+        const vendor = module.getVendor();
+        if (!vendorMap.has(vendor)) {
+          vendorMap.set(vendor, []);
+        }
+        vendorMap.get(vendor)!.push(module);
+      }
+
+      // Convert to tree items, sorted alphabetically
+      const vendorGroups = Array.from(vendorMap.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([vendorName, modules]) =>
+          new VendorGroupTreeItem(
+            vendorName,
+            modules,
+            vscode.TreeItemCollapsibleState.Collapsed
+          )
+        );
+
+      return Promise.resolve(vendorGroups);
+    }
+
+    if (element instanceof VendorGroupTreeItem) {
+      // Vendor group level: return all modules for this vendor
+      const modules = element.modules
+        .sort((a, b) => a.getModuleName().localeCompare(b.getModuleName()))
+        .map(module =>
+          new ModuleTreeItem(module, vscode.TreeItemCollapsibleState.None)
+        );
 
       return Promise.resolve(modules);
     }
