@@ -3,6 +3,8 @@
   "displayName": "Magento VSCode",
   "description": "VSCode Plugin for better Magento 2 development workflow.",
   "version": "0.0.1",
+  "publisher": "MatseVH",
+  "preview": true,
   "engines": {
     "vscode": "^1.109.0"
   },
@@ -12,12 +14,39 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "magentoContainer",
+          "title": "Magento",
+          "icon": "media/logo.svg"
+        }
+      ]
+    },
+    "views": {
+      "magentoContainer": [
+        {
+          "id": "magentoProjects",
+          "name": "Projects"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "magento-vscode.helloWorld",
-        "title": "Hello World"
+        "command": "magento.refreshProjects",
+        "title": "Magento: Refresh Projects",
+        "icon": "$(refresh)"
       }
-    ]
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "magento.refreshProjects",
+          "when": "view == magentoProjects",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
