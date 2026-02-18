@@ -37,13 +37,8 @@
     },
     "commands": [
       {
-        "command": "magento.refreshProjects",
-        "title": "Magento: Refresh Projects",
-        "icon": "$(refresh)"
-      },
-      {
         "command": "magento.createModule",
-        "title": "Magento: Create New Module"
+        "title": "Magento: Create Module"
       }
     ],
     "menus": {
@@ -69,7 +64,10 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "magento:create": "node ./scripts/create.mjs",
+    "magento:sync": "node ./scripts/sync.mjs",
+    "magento:publish": "npm run magento:sync && npm run pretest && npm run test && vsce publish"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.3",
@@ -81,9 +79,11 @@
     "eslint": "^8.52.0",
     "glob": "^13.0.3",
     "mocha": "^10.2.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "@inquirer/prompts": "^8.2.1"
   },
   "dependencies": {
+    "handlebars": "^4.7.8",
     "lru-cache": "^11.2.6"
   }
 }

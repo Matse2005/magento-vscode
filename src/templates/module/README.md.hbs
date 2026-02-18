@@ -1,0 +1,31 @@
+# {{fullModuleName}}
+
+## Description
+
+{{fullModuleName}} module for Magento 2.
+
+## Version
+
+{{version}}
+
+## License
+
+{{join license ", "}}
+
+## Installation
+
+```bash
+bin/magento module:enable {{fullModuleName}}
+bin/magento setup:upgrade
+bin/magento cache:flush
+```
+
+## Dependencies
+
+{{#if dependencies}}
+{{#each dependencies}}
+- `{{this.moduleName}}` (`{{this.composerName}}`)
+{{/each}}
+{{else}}
+None
+{{/if}}

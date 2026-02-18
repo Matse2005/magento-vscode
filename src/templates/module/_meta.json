@@ -1,0 +1,47 @@
+{
+  "id": "module",
+  "label": "Magento: Create Module",
+  "command": "magento.createModule",
+  "contextMenu": {
+    "when": "explorerResourceIsFolder && resourcePath =~ /.*[/\\\\]app[/\\\\]code$/",
+    "group": "magento@1"
+  },
+  "steps": [
+    {
+      "id": "packageName",
+      "type": "input",
+      "label": "Vendor / Package Name",
+      "placeholder": "e.g. MyCompany",
+      "validate": "pascal-case"
+    },
+    {
+      "id": "moduleName",
+      "type": "input",
+      "label": "Module Name",
+      "placeholder": "e.g. Checkout",
+      "validate": "pascal-case"
+    },
+    {
+      "id": "version",
+      "type": "input",
+      "label": "Version",
+      "placeholder": "e.g. 1.0.0",
+      "default": "1.0.0",
+      "validate": "semver"
+    },
+    {
+      "id": "license",
+      "type": "multi-select",
+      "label": "License(s)",
+      "source": "licenses"
+    },
+    {
+      "id": "dependencies",
+      "type": "multi-select",
+      "label": "Module Dependecies",
+      "source": "installedModules",
+      "optional": true
+    }
+  ],
+  "outputPath": "{{packageName}}/{{moduleName}}"
+}

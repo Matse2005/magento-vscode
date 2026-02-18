@@ -1,0 +1,20 @@
+{
+  "name": "{{packageNameLower}}/module-{{kebab moduleName}}",
+  "description": "{{fullModuleName}} module for Magento 2",
+  "type": "magento2-module",
+  "version": "{{version}}",
+  "license": [{{#each license}}"{{this}}"{{#unless @last}}, {{/unless}}{{/each}}],
+  "require": {
+    {{#each dependencies}}
+    "{{this.composerName}}": "{{this.version}}"{{#unless @last}},{{/unless}}
+    {{/each}}
+  },
+  "autoload": {
+    "files": [
+      "registration.php"
+    ],
+    "psr-4": {
+      "{{packageName}}\\\{{moduleName}}\\": ""
+    }
+  }
+}
