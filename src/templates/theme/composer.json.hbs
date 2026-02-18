@@ -1,0 +1,17 @@
+{
+  "name": "{{packageNameLower}}/theme-{{kebab name}}",
+  "description": "{{fullModuleName}} theme for Magento 2",
+  "type": "magento2-theme",
+  "license": [{{#each license}}"{{this}}"{{#unless @last}}, {{/unless}}{{/each}}],
+  "require": {
+    "magento/framework": "*",
+  },
+  "autoload": {
+    "files": [
+      "registration.php"
+    ],
+    "psr-4": {
+      "{{packageName}}\\\{{moduleName}}\\": ""
+    }
+  }
+}

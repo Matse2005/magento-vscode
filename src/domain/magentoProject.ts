@@ -1,4 +1,5 @@
 import { MagentoModule } from "./magentoModule";
+import { MagentoTheme } from "./magentoTheme";
 
 /**
  * Represents a Magento project detected in the workspace
@@ -19,14 +20,21 @@ export class MagentoProject {
    */
   public readonly modules: MagentoModule[];
 
+  /**
+ * List of modules in this project
+ */
+  public readonly themes: MagentoTheme[];
+
   constructor(
     rootPath: string,
     edition: 'Community' | 'Enterprise',
-    modules: MagentoModule[] = []
+    modules: MagentoModule[] = [],
+    themes: MagentoTheme[] = []
   ) {
     this.rootPath = rootPath;
     this.edition = edition;
     this.modules = modules;
+    this.themes = themes;
   }
 
   /**

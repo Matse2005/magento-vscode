@@ -3,6 +3,9 @@
  * DEV TOOL — keeps package.json in sync with src/templates/.
  * Called automatically by create.mjs, or run manually after editing a _meta.json.
  *
+ * Merges template-generated commands and menu items with any existing
+ * non-template entries so hand-written commands are never removed.
+ *
  * Usage:
  *   npm run magento:sync
  */
@@ -82,27 +85,41 @@ async function main() {
     process.exit(1);
   }
 
-  // Stable order so git diffs are clean
   metas.sort((a, b) => a.contextMenu.group.localeCompare(b.contextMenu.group));
 
-  // Build contributes sections
-  const commands = metas.map((m) => ({
-    command: m.command,
-    title: m.label,
-  }));
-
-  const menuItems = metas.map((m) => ({
-    command: m.command,
-    when: m.contextMenu.when,
-    group: m.contextMenu.group,
-  }));
-
-  // Patch package.json, preserve everything else
   const pkg = JSON.parse(await readFile(PKG_PATH, "utf8"));
   pkg.contributes ??= {};
-  pkg.contributes.commands = commands;
+  pkg.contributes.commands ??= [];
   pkg.contributes.menus ??= {};
-  pkg.contributes.menus["explorer/context"] = menuItems;
+  pkg.contributes.menus["explorer/context"] ??= [];
+
+  // Collect command IDs generated from templates
+  const templateCommandIds = new Set(metas.map((m) => m.command));
+
+  // Keep existing commands that are NOT template-generated
+  const manualCommands = pkg.contributes.commands.filter(
+    (c) => !templateCommandIds.has(c.command),
+  );
+
+  // Keep existing menu items that are NOT template-generated
+  const manualMenuItems = pkg.contributes.menus["explorer/context"].filter(
+    (m) => !templateCommandIds.has(m.command),
+  );
+
+  // Merge: manual entries first, then template-generated ones
+  pkg.contributes.commands = [
+    ...manualCommands,
+    ...metas.map((m) => ({ command: m.command, title: m.label })),
+  ];
+
+  pkg.contributes.menus["explorer/context"] = [
+    ...manualMenuItems,
+    ...metas.map((m) => ({
+      command: m.command,
+      when: m.contextMenu.when,
+      group: m.contextMenu.group,
+    })),
+  ];
 
   await writeFile(PKG_PATH, JSON.stringify(pkg, null, 2) + "\n", "utf8");
 

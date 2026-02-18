@@ -1,0 +1,9 @@
+{{!-- theme/registration.php --}}
+{{!-- Available variables (from _meta.json steps + buildContext in extension.ts):
+  General  : {{year}}
+  Module   : {{packageName}} {{moduleName}} {{fullModuleName}} {{version}}
+  Composer : {{packageNameLower}} {{moduleNameLower}}
+  Deps     : {{#each dependencies}}{{this.moduleName}} {{this.composerName}}{{/each}}
+  Helpers  : {{lowercase x}} {{uppercase x}} {{kebab x}} {{snake x}} {{join arr ", "}}
+--}}
+

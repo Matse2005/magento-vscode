@@ -1,20 +1,22 @@
 import * as vscode from 'vscode';
 import { MagentoProject } from '../domain/magentoProject';
-import { WorkspaceScanner } from '../services/workspaceScanner';
 import { MagentoModule } from '../domain/magentoModule';
+import { MagentoTheme } from '../domain/magentoTheme';
+import { WorkspaceScanner } from '../services/workspaceScanner';
 
-/**
- * Tree item types for the TreeView
- */
-type TreeElement = ProjectTreeItem | VendorGroupTreeItem | ModuleTreeItem;
+type TreeElement =
+  | ProjectTreeItem
+  | SectionTreeItem
+  | VendorGroupTreeItem
+  | ModuleTreeItem
+  | ThemeTreeItem;
 
-/**
- * Tree item representing a Magento project in the TreeView
- */
+// ── Project ───────────────────────────────────────────────────────────────────
+
 export class ProjectTreeItem extends vscode.TreeItem {
   constructor(
     public readonly project: MagentoProject,
-    public readonly collapsibleState: vscode.TreeItemCollapsibleState
+    collapsibleState: vscode.TreeItemCollapsibleState
   ) {
     super(project.getDisplayName(), collapsibleState);
 
@@ -22,66 +24,66 @@ export class ProjectTreeItem extends vscode.TreeItem {
     const customCount = project.modules.filter(m => m.type === 'custom').length;
 
     this.tooltip = `${project.rootPath}\n${vendorCount} vendor modules, ${customCount} custom modules`;
-    this.description = `${project.modules.length} modules`;
+    this.description = `${project.modules.length} modules, ${project.themes.length} themes`;
     this.contextValue = 'magentoProject';
-
-    // Set icon based on edition
-    this.iconPath = new vscode.ThemeIcon(
-      project.edition === 'Enterprise' ? 'star-full' : 'package'
-    );
-
-    // Command to reveal project in explorer
-    this.command = {
-      command: 'revealInExplorer',
-      title: 'Reveal in Explorer',
-      arguments: [vscode.Uri.file(project.rootPath)]
-    };
+    this.iconPath = new vscode.ThemeIcon(project.edition === 'Enterprise' ? 'star-full' : 'package');
+    // this.command = {
+    //   command: 'revealInExplorer',
+    //   title: 'Reveal in Explorer',
+    //   arguments: [vscode.Uri.file(project.rootPath)],
+    // };
   }
 }
 
-/**
- * Tree item representing a vendor group (e.g., "Magento", "MyCompany")
- */
+// ── Section (Modules / Themes) ────────────────────────────────────────────────
+
+export class SectionTreeItem extends vscode.TreeItem {
+  constructor(
+    public readonly kind: 'modules' | 'themes',
+    public readonly project: MagentoProject,
+    collapsibleState: vscode.TreeItemCollapsibleState
+  ) {
+    const label = kind === 'modules' ? 'Modules' : 'Themes';
+    super(label, collapsibleState);
+
+    this.description = kind === 'modules'
+      ? `${project.modules.length}`
+      : `${project.themes.length}`;
+    this.contextValue = `magentoSection.${kind}`;
+    this.iconPath = new vscode.ThemeIcon(kind === 'modules' ? 'extensions' : 'paintcan');
+  }
+}
+
+// ── Vendor group ──────────────────────────────────────────────────────────────
+
 export class VendorGroupTreeItem extends vscode.TreeItem {
   constructor(
     public readonly vendorName: string,
     public readonly modules: MagentoModule[],
-    public readonly collapsibleState: vscode.TreeItemCollapsibleState
+    collapsibleState: vscode.TreeItemCollapsibleState
   ) {
     super(vendorName, collapsibleState);
 
     const vendorCount = modules.filter(m => m.type === 'vendor').length;
     const customCount = modules.filter(m => m.type === 'custom').length;
 
-    // Build description showing mix of vendor/custom if applicable
-    let description = `${modules.length} modules`;
-    if (vendorCount > 0 && customCount > 0) {
-      description = `${vendorCount} vendor, ${customCount} custom`;
-    } else if (customCount > 0) {
-      description = `${customCount} custom`;
-    }
-
+    this.description = vendorCount > 0 && customCount > 0
+      ? `${vendorCount} vendor, ${customCount} custom`
+      : customCount > 0 ? `${customCount} custom` : `${modules.length} modules`;
     this.tooltip = `${modules.length} modules`;
-    this.description = description;
     this.contextValue = 'magentoVendorGroup';
-
-    // Set icon for vendor folder
     this.iconPath = new vscode.ThemeIcon('folder');
   }
 }
 
-/**
- * Tree item representing a Magento module in the TreeView
- */
+// ── Module ────────────────────────────────────────────────────────────────────
+
 export class ModuleTreeItem extends vscode.TreeItem {
   constructor(
     public readonly module: MagentoModule,
-    public readonly collapsibleState: vscode.TreeItemCollapsibleState
+    collapsibleState: vscode.TreeItemCollapsibleState
   ) {
-    // Display only module name (without vendor prefix)
-    const displayName = module.getModuleName();
-
-    super(displayName, collapsibleState);
+    super(module.getModuleName(), collapsibleState);
 
     const typeLabel = module.type === 'custom' ? 'Custom' : 'Vendor';
     const versionInfo = module.version ? ` • v${module.version}` : '';
@@ -89,127 +91,121 @@ export class ModuleTreeItem extends vscode.TreeItem {
     this.tooltip = `${module.name}\n${module.path}\nType: ${typeLabel}${versionInfo}`;
     this.description = `${typeLabel}${versionInfo}`;
     this.contextValue = `magentoModule.${module.type}`;
-
-    // Set icon based on module type
-    this.iconPath = new vscode.ThemeIcon(
-      module.type === 'custom' ? 'file-code' : 'library'
-    );
-
-    // Command to open module directory
+    this.iconPath = new vscode.ThemeIcon(module.type === 'custom' ? 'file-code' : 'library');
     this.command = {
       command: 'revealInExplorer',
       title: 'Reveal in Explorer',
-      arguments: [vscode.Uri.file(module.path)]
+      arguments: [vscode.Uri.file(module.path)],
     };
   }
 }
 
-/**
- * TreeDataProvider for displaying Magento projects in VS Code TreeView
- */
-export class ProjectTreeProvider implements vscode.TreeDataProvider<TreeElement> {
-  private _onDidChangeTreeData: vscode.EventEmitter<TreeElement | undefined | null | void> =
-    new vscode.EventEmitter<TreeElement | undefined | null | void>();
+// ── Theme ─────────────────────────────────────────────────────────────────────
 
-  readonly onDidChangeTreeData: vscode.Event<TreeElement | undefined | null | void> =
-    this._onDidChangeTreeData.event;
+export class ThemeTreeItem extends vscode.TreeItem {
+  constructor(public readonly theme: MagentoTheme) {
+    super(theme.name, vscode.TreeItemCollapsibleState.None);
+
+    const typeLabel = theme.type === 'custom' ? 'Custom' : 'Vendor';
+    const versionInfo = theme.version ? ` • v${theme.version}` : '';
+
+    this.tooltip = `${theme.name}\n${theme.path}\nArea: ${theme.area}\nType: ${typeLabel}${versionInfo}`;
+    this.description = `${theme.area} — ${typeLabel}${versionInfo}`;
+    this.contextValue = `magentoTheme.${theme.type}`;
+    this.iconPath = new vscode.ThemeIcon(theme.type === 'custom' ? 'paintcan' : 'symbol-color');
+    this.command = {
+      command: 'revealInExplorer',
+      title: 'Reveal in Explorer',
+      arguments: [vscode.Uri.file(theme.path)],
+    };
+  }
+}
+
+// ── Provider ──────────────────────────────────────────────────────────────────
+
+export class ProjectTreeProvider implements vscode.TreeDataProvider<TreeElement> {
+  private _onDidChangeTreeData = new vscode.EventEmitter<TreeElement | undefined | null | void>();
+  readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
   private projects: MagentoProject[] = [];
 
   constructor(private scanner: WorkspaceScanner) { }
 
-  /**
-   * Get all projects (for external access)
-   */
   public getProjects(): MagentoProject[] {
     return this.projects;
   }
 
-  /**
-   * Refresh the tree by rescanning the workspace
-   */
   public async refresh(): Promise<void> {
     this.projects = await this.scanner.scanWorkspace();
     this._onDidChangeTreeData.fire();
   }
 
-  /**
-   * Get tree item for a given element
-   */
   getTreeItem(element: TreeElement): vscode.TreeItem {
     return element;
   }
 
-  /**
-   * Get children of a tree element
-   */
   getChildren(element?: TreeElement): Thenable<TreeElement[]> {
+    // Root — list projects
     if (!element) {
-      // Root level: return all projects
-      if (this.projects.length === 0) {
-        return Promise.resolve([]);
-      }
-
-      const items = this.projects.map(project =>
-        new ProjectTreeItem(
-          project,
-          project.modules.length > 0
+      return Promise.resolve(
+        this.projects.map(p => new ProjectTreeItem(
+          p,
+          p.modules.length > 0 || p.themes.length > 0
             ? vscode.TreeItemCollapsibleState.Collapsed
             : vscode.TreeItemCollapsibleState.None
-        )
+        ))
       );
-
-      return Promise.resolve(items);
     }
 
+    // Project — show Modules and Themes sections
     if (element instanceof ProjectTreeItem) {
-      // Project level: return vendor groups
-      const vendorMap = new Map<string, MagentoModule[]>();
-
-      // Group all modules by vendor name
-      for (const module of element.project.modules) {
-        const vendor = module.getVendor();
-        if (!vendorMap.has(vendor)) {
-          vendorMap.set(vendor, []);
-        }
-        vendorMap.get(vendor)!.push(module);
+      const sections: SectionTreeItem[] = [];
+      if (element.project.modules.length > 0) {
+        sections.push(new SectionTreeItem('modules', element.project, vscode.TreeItemCollapsibleState.Collapsed));
       }
-
-      // Convert to tree items, sorted alphabetically
-      const vendorGroups = Array.from(vendorMap.entries())
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .map(([vendorName, modules]) =>
-          new VendorGroupTreeItem(
-            vendorName,
-            modules,
-            vscode.TreeItemCollapsibleState.Collapsed
-          )
-        );
-
-      return Promise.resolve(vendorGroups);
+      if (element.project.themes.length > 0) {
+        sections.push(new SectionTreeItem('themes', element.project, vscode.TreeItemCollapsibleState.Collapsed));
+      }
+      return Promise.resolve(sections);
     }
 
+    // Modules section — group by vendor
+    if (element instanceof SectionTreeItem && element.kind === 'modules') {
+      const vendorMap = new Map<string, MagentoModule[]>();
+      for (const mod of element.project.modules) {
+        const vendor = mod.getVendor();
+        if (!vendorMap.has(vendor)) { vendorMap.set(vendor, []); }
+        vendorMap.get(vendor)!.push(mod);
+      }
+      return Promise.resolve(
+        Array.from(vendorMap.entries())
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([name, mods]) => new VendorGroupTreeItem(name, mods, vscode.TreeItemCollapsibleState.Collapsed))
+      );
+    }
+
+    // Themes section — flat list sorted by area then name
+    if (element instanceof SectionTreeItem && element.kind === 'themes') {
+      return Promise.resolve(
+        [...element.project.themes]
+          .sort((a, b) => a.area.localeCompare(b.area) || a.name.localeCompare(b.name))
+          .map(t => new ThemeTreeItem(t))
+      );
+    }
+
+    // Vendor group — list modules
     if (element instanceof VendorGroupTreeItem) {
-      // Vendor group level: return all modules for this vendor
-      const modules = element.modules
-        .sort((a, b) => a.getModuleName().localeCompare(b.getModuleName()))
-        .map(module =>
-          new ModuleTreeItem(module, vscode.TreeItemCollapsibleState.None)
-        );
-
-      return Promise.resolve(modules);
+      return Promise.resolve(
+        [...element.modules]
+          .sort((a, b) => a.getModuleName().localeCompare(b.getModuleName()))
+          .map(m => new ModuleTreeItem(m, vscode.TreeItemCollapsibleState.None))
+      );
     }
 
-    // Module level: no children
     return Promise.resolve([]);
   }
 
-  /**
-   * Get parent of a tree element
-   */
-  getParent(element: TreeElement): vscode.ProviderResult<TreeElement> {
-    // Modules don't store their parent reference, so return null
-    // In the future, we could maintain a parent map if needed
+  getParent(_element: TreeElement): vscode.ProviderResult<TreeElement> {
     return null;
   }
 }

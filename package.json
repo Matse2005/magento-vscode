@@ -2,7 +2,7 @@
   "name": "magento-vscode",
   "displayName": "Magento VSCode",
   "description": "VSCode Plugin for better Magento 2 development workflow.",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publisher": "MatseVH",
   "repository": {
     "url": "https://github.com/matse2005/magento-vscode",
@@ -37,8 +37,17 @@
     },
     "commands": [
       {
+        "command": "magento.refreshProjects",
+        "title": "Magento: Refresh Projects",
+        "icon": "$(refresh)"
+      },
+      {
         "command": "magento.createModule",
         "title": "Magento: Create Module"
+      },
+      {
+        "command": "magento.createTheme",
+        "title": "Magento: Create Theme"
       }
     ],
     "menus": {
@@ -54,6 +63,11 @@
           "command": "magento.createModule",
           "when": "explorerResourceIsFolder && resourcePath =~ /.*[/\\\\]app[/\\\\]code$/",
           "group": "magento@1"
+        },
+        {
+          "command": "magento.createTheme",
+          "when": "explorerResourceIsFolder && resourcePath =~ /.*[/\\\\]app[/\\\\]design[/\\\\]frontend$/",
+          "group": "magento@1"
         }
       ]
     }
@@ -61,15 +75,20 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "watch": "npm-run-all --parallel watch:tsc watch:templates",
+    "watch:tsc": "tsc -watch -p ./",
+    "watch:templates": "node scripts/copyTemplates.mjs --watch",
+    "copy:templates": "node scripts/copyTemplates.mjs",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
     "magento:create": "node ./scripts/create.mjs",
     "magento:sync": "node ./scripts/sync.mjs",
-    "magento:publish": "npm run magento:sync && npm run pretest && npm run test && vsce publish"
+    "magento:publish": "npm run magento:sync && npm run copy:templates && npm run pretest && npm run test && vsce publish",
+    "magento:build": "npm run magento:sync && npm run copy:templates && npm run pretest && npm run test && vsce build"
   },
   "devDependencies": {
+    "@inquirer/prompts": "^8.2.1",
     "@types/mocha": "^10.0.3",
     "@types/node": "18.x",
     "@types/vscode": "^1.109.0",
@@ -79,8 +98,8 @@
     "eslint": "^8.52.0",
     "glob": "^13.0.3",
     "mocha": "^10.2.0",
-    "typescript": "^5.2.2",
-    "@inquirer/prompts": "^8.2.1"
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.2.2"
   },
   "dependencies": {
     "handlebars": "^4.7.8",

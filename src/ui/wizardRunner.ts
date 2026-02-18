@@ -16,11 +16,12 @@ export class WizardRunner {
     meta: TemplateMeta,
     targetPath: string,
     modules: SourceContext['modules'] = [],
+    themes: SourceContext['themes'] = [],
   ): Promise<WizardAnswers | undefined> {
     const answers: WizardAnswers = {};
 
     for (const step of meta.steps) {
-      const result = await this.runStep(step, meta, targetPath, answers, modules);
+      const result = await this.runStep(step, meta, targetPath, answers, modules, themes);
 
       if (result === undefined && !step.optional) {
         return undefined; // user cancelled
@@ -37,6 +38,7 @@ export class WizardRunner {
     targetPath: string,
     answers: WizardAnswers,
     modules: SourceContext['modules'],
+    themes: SourceContext['themes'],
   ): Promise<unknown> {
     switch (step.type) {
       case 'input':
@@ -48,16 +50,17 @@ export class WizardRunner {
         });
 
       case 'select': {
-        const items = await this.resolveSource(step, meta, targetPath, answers, modules);
+        const items = await this.resolveSource(step, meta, targetPath, answers, modules, themes);
         const picked = await vscode.window.showQuickPick(items, {
           title: step.label,
           matchOnDescription: true,
+          matchOnDetail: true,
         });
         return picked?.label;
       }
 
       case 'multi-select': {
-        const items = await this.resolveSource(step, meta, targetPath, answers, modules);
+        const items = await this.resolveSource(step, meta, targetPath, answers, modules, themes);
         const picked = await vscode.window.showQuickPick(items, {
           title: step.label,
           canPickMany: true,
@@ -78,6 +81,7 @@ export class WizardRunner {
     targetPath: string,
     answers: WizardAnswers,
     modules: SourceContext['modules'],
+    themes: SourceContext['themes'],
   ): Promise<vscode.QuickPickItem[]> {
     if (!step.source) {
       return [];
@@ -89,7 +93,7 @@ export class WizardRunner {
       return [];
     }
 
-    const ctx: SourceContext = { targetPath, answers, modules };
+    const ctx: SourceContext = { targetPath, answers, modules, themes };
     const items: SourceItem[] = typeof source === 'function'
       ? await source(ctx)
       : source;

@@ -59,12 +59,12 @@ export async function activate(context: vscode.ExtensionContext) {
 					return;
 				}
 
-				// Resolve already-scanned modules for the dependency picker
 				const projectPath = path.resolve(uri.fsPath, '..', '..');
 				const project = projectTreeProvider.getProjects().find(p => p.rootPath === projectPath);
 				const modules = project?.modules ?? [];
+				const themes = project?.themes ?? [];
 
-				const answers = await WizardRunner.run(template, uri.fsPath, modules);
+				const answers = await WizardRunner.run(template, uri.fsPath, modules, themes);
 				if (!answers) {
 					return; // user cancelled
 				}
@@ -126,6 +126,12 @@ function buildContext(answers: WizardAnswers): Record<string, unknown> {
 		version: '*',
 	}));
 
+	// parentTheme label may encode composer name: "Vendor/theme-name||composer/package"
+	const parentThemeRaw = answers['parentTheme'] as string | undefined;
+	const [parentTheme, parentThemeComposer] = parentThemeRaw
+		? parentThemeRaw.split('||')
+		: [undefined, undefined];
+
 	return {
 		...answers,
 		dependencies,
@@ -133,6 +139,8 @@ function buildContext(answers: WizardAnswers): Record<string, unknown> {
 		packageNameLower: pkg.toLowerCase(),
 		moduleNameLower: mod.toLowerCase(),
 		year: new Date().getFullYear(),
+		parentTheme,
+		parentThemeComposer,
 	};
 }
 

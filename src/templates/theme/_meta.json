@@ -1,0 +1,37 @@
+{
+  "id": "theme",
+  "label": "Magento: Create Theme",
+  "command": "magento.createTheme",
+  "contextMenu": {
+    "when": "explorerResourceIsFolder && resourcePath =~ /.*[/\\\\]app[/\\\\]design[/\\\\]frontend$/",
+    "group": "magento@1"
+  },
+  "steps": [
+    {
+      "id": "name",
+      "type": "input",
+      "label": "Name"
+    },
+    {
+      "id": "parentTheme",
+      "type": "select",
+      "label": "Parent Theme",
+      "source": "installedThemes"
+    },
+    {
+      "id": "version",
+      "type": "input",
+      "label": "Version",
+      "placeholder": "e.g. 1.0.0",
+      "default": "1.0.0",
+      "validate": "semver"
+    },
+    {
+      "id": "license",
+      "type": "multi-select",
+      "label": "License(s)",
+      "source": "licenses"
+    }
+  ],
+  "outputPath": "{{packageName}}/{{moduleName}}"
+}

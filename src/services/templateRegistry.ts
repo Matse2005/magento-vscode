@@ -42,13 +42,15 @@ export interface SourceContext {
   targetPath: string;
   answers: Record<string, unknown>;
   modules: { name: string; type: 'vendor' | 'custom'; version?: string; composerName?: string }[];
+  themes: { name: string; area: 'frontend' | 'adminhtml'; type: 'vendor' | 'custom'; title?: string; composerName?: string; version?: string }[];
 }
 
 export class TemplateRegistry {
   private constructor(private templates: TemplateMeta[]) { }
 
   static async load(extensionRoot: string): Promise<TemplateRegistry> {
-    const templatesRoot = path.join(extensionRoot, 'src', 'templates');
+    const templatesRoot = path.join(extensionRoot, 'out', 'templates');
+
     let entries: Dirent[];
 
     try {
@@ -73,7 +75,7 @@ export class TemplateRegistry {
 
         let sources: TemplateSourceMap = {};
         try {
-          const mod = await import(path.join(dir, 'sources.ts'));
+          const mod = await import(path.join(dir, 'sources.js'));
           sources = mod.default ?? mod;
         } catch {
           // No sources.ts — fine
