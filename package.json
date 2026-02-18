@@ -2,7 +2,7 @@
   "name": "magento-vscode",
   "displayName": "Magento VSCode",
   "description": "VSCode Plugin for better Magento 2 development workflow.",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "MatseVH",
   "repository": {
     "url": "https://github.com/matse2005/magento-vscode",
