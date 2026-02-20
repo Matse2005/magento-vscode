@@ -2,7 +2,7 @@
   "name": "magento-vscode",
   "displayName": "Magento VSCode",
   "description": "VSCode Plugin for better Magento 2 development workflow.",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "publisher": "MatseVH",
   "repository": {
     "url": "https://github.com/matse2005/magento-vscode",
@@ -75,9 +75,7 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "npm-run-all --parallel watch:tsc watch:templates",
-    "watch:tsc": "tsc -watch -p ./",
-    "watch:templates": "node scripts/copyTemplates.mjs --watch",
+    "watch": "tsc -watch -p ./",
     "copy:templates": "node scripts/copyTemplates.mjs",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",

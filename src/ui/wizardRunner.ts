@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { TemplateMeta, WizardStep, SourceItem, SourceContext } from '../services/templateRegistry';
+import { MagentoModule } from '../domain/magentoModule';
+import { MagentoTheme } from '../domain/magentoTheme';
 
 export type WizardAnswers = Record<string, unknown>;
 
@@ -15,8 +17,8 @@ export class WizardRunner {
   static async run(
     meta: TemplateMeta,
     targetPath: string,
-    modules: SourceContext['modules'] = [],
-    themes: SourceContext['themes'] = [],
+    modules: MagentoModule[] = [],
+    themes: MagentoTheme[] = [],
   ): Promise<WizardAnswers | undefined> {
     const answers: WizardAnswers = {};
 
@@ -37,8 +39,8 @@ export class WizardRunner {
     meta: TemplateMeta,
     targetPath: string,
     answers: WizardAnswers,
-    modules: SourceContext['modules'],
-    themes: SourceContext['themes'],
+    modules: MagentoModule[],
+    themes: MagentoTheme[],
   ): Promise<unknown> {
     switch (step.type) {
       case 'input':
@@ -80,8 +82,8 @@ export class WizardRunner {
     meta: TemplateMeta,
     targetPath: string,
     answers: WizardAnswers,
-    modules: SourceContext['modules'],
-    themes: SourceContext['themes'],
+    modules: MagentoModule[],
+    themes: MagentoTheme[],
   ): Promise<vscode.QuickPickItem[]> {
     if (!step.source) {
       return [];

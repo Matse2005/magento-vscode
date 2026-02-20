@@ -1,6 +1,8 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import type { Dirent } from 'fs'; // Dirent lives in 'fs', not 'fs/promises'
+import type { Dirent } from 'fs';
+import type { MagentoModule } from '../domain/magentoModule';
+import type { MagentoTheme } from '../domain/magentoTheme';
 
 export type StepValidation = 'pascal-case' | 'semver' | 'non-empty';
 
@@ -41,8 +43,8 @@ export type TemplateSourceMap = Record<string, SourceItem[] | SourceFn>;
 export interface SourceContext {
   targetPath: string;
   answers: Record<string, unknown>;
-  modules: { name: string; type: 'vendor' | 'custom'; version?: string; composerName?: string }[];
-  themes: { name: string; area: 'frontend' | 'adminhtml'; type: 'vendor' | 'custom'; title?: string; composerName?: string; version?: string }[];
+  modules: MagentoModule[];
+  themes: MagentoTheme[];
 }
 
 export class TemplateRegistry {
@@ -52,7 +54,6 @@ export class TemplateRegistry {
     const templatesRoot = path.join(extensionRoot, 'out', 'templates');
 
     let entries: Dirent[];
-
     try {
       entries = await fs.readdir(templatesRoot, { withFileTypes: true });
     } catch {
@@ -73,12 +74,15 @@ export class TemplateRegistry {
         const raw = await fs.readFile(metaPath, 'utf8');
         const meta = JSON.parse(raw);
 
+        // Use require() instead of dynamic import() — synchronous, reliable in extension host
         let sources: TemplateSourceMap = {};
+        const sourcesPath = path.join(dir, 'sources.js');
         try {
-          const mod = await import(path.join(dir, 'sources.js'));
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const mod = require(sourcesPath);
           sources = mod.default ?? mod;
         } catch {
-          // No sources.ts — fine
+          // No sources.js — fine
         }
 
         templates.push({ ...meta, dir, sources });
