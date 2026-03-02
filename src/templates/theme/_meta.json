@@ -8,9 +8,18 @@
   },
   "steps": [
     {
-      "id": "name",
+      "id": "packageName",
       "type": "input",
-      "label": "Name"
+      "label": "Vendor / Package Name",
+      "placeholder": "e.g. MyCompany",
+      "validate": "pascal-case"
+    },
+    {
+      "id": "themeName",
+      "type": "input",
+      "label": "Theme Name",
+      "placeholder": "e.g. Default",
+      "validate": "pascal-case"
     },
     {
       "id": "parentTheme",
@@ -33,5 +42,5 @@
       "source": "licenses"
     }
   ],
-  "outputPath": "{{packageName}}/{{moduleName}}"
+  "outputPath": "{{packageName}}/{{themeName}}"
 }

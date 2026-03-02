@@ -17,7 +17,7 @@ const licenses: SourceItem[] = [
 
 const installedThemes = ({ themes }: SourceContext): SourceItem[] => {
   return themes.map(t => ({
-    label: t.composerName ? `${t.name}||${t.composerName}` : t.name,
+    label: t.name,
     description: `${t.area} — ${t.type === 'vendor' ? 'Vendor' : 'Custom'}`,
     detail: t.title ?? (t.version ? `v${t.version}` : undefined),
   }));

@@ -60,7 +60,14 @@ export class TemplateEngine {
     const entries: Dirent[] = await fs.readdir(currentDir, { withFileTypes: true });
 
     for (const entry of entries) {
-      if (entry.name === '_meta.json' || entry.name === 'sources.ts') {
+      const skipFiles = [
+        "_meta.json",
+        "sources.ts",
+        "sources.js",
+        "sources.js.map"
+      ];
+
+      if (skipFiles.includes(entry.name)) {
         continue;
       }
 
@@ -74,7 +81,10 @@ export class TemplateEngine {
         await this.walk(baseDir, srcPath, outputDir, ctx, writer, written);
       } else if (entry.name.endsWith('.hbs')) {
         const raw = await fs.readFile(srcPath, 'utf8');
+        console.log('RAW TEMPLATE:', raw);
+        console.log('CTX themeName:', (ctx as any)['themeName']);
         const content = this.renderString(raw, ctx);
+        console.log('RENDERED:', content);
         await writer.write(destPath, content);
         written.push(destPath);
       } else {

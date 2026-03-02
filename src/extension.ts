@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import Handlebars from 'handlebars';
 import { ProjectTreeProvider } from './ui/projectTreeProvider';
 import { WorkspaceScanner } from './services/workspaceScanner';
 import { TemplateRegistry } from './services/templateRegistry';
@@ -20,21 +19,21 @@ class VscodeFileWriter {
 }
 
 let projectTreeProvider: ProjectTreeProvider;
+const log = vscode.window.createOutputChannel('Magento Debug');
 
 export async function activate(context: vscode.ExtensionContext) {
-	console.log('Magento Extension is now active');
+	log.show();
+	log.appendLine('=== Magento Extension activating ===');
 
 	const scanner = new WorkspaceScanner();
 	projectTreeProvider = new ProjectTreeProvider(scanner);
 
-	// Register TreeView
 	const treeView = vscode.window.createTreeView('magentoProjects', {
 		treeDataProvider: projectTreeProvider,
 		showCollapseAll: true,
 	});
 	context.subscriptions.push(treeView);
 
-	// Register refresh command
 	const refreshCommand = vscode.commands.registerCommand(
 		'magento.refreshProjects',
 		async () => {
@@ -44,33 +43,67 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 	context.subscriptions.push(refreshCommand);
 
-	// ── Template-driven commands ──────────────────────────────────────────────
-
 	const registry = await TemplateRegistry.load(context.extensionPath);
 	const engine = new TemplateEngine();
 	const writer = new VscodeFileWriter();
+
+	log.appendLine(`Loaded ${registry.all().length} template(s)`);
+
+	await projectTreeProvider.refresh();
+
+	const projects = projectTreeProvider.getProjects();
+	log.appendLine(`After initial scan: ${projects.length} project(s)`);
+	for (const p of projects) {
+		log.appendLine(`  Project: ${p.rootPath}`);
+		log.appendLine(`    modules (${p.modules.length}): ${p.modules.map(m => m.name).join(', ') || '(none)'}`);
+		log.appendLine(`    themes  (${p.themes.length}): ${p.themes.map(t => t.name).join(', ') || '(none)'}`);
+	}
 
 	for (const template of registry.all()) {
 		const cmd = vscode.commands.registerCommand(
 			template.command,
 			async (uri: vscode.Uri) => {
+				log.appendLine(`\n--- Command fired: ${template.command} ---`);
+				log.appendLine(`  uri.fsPath: ${uri?.fsPath}`);
+
 				if (!uri?.fsPath) {
 					vscode.window.showErrorMessage('Use this command from the Explorer context menu.');
 					return;
 				}
 
-				const projectPath = path.resolve(uri.fsPath, '..', '..');
-				const project = projectTreeProvider.getProjects().find(p => p.rootPath === projectPath);
+				const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+				const workspaceRoot = workspaceFolder?.uri.fsPath;
+
+				const currentProjects = projectTreeProvider.getProjects();
+				const project = currentProjects.find(p =>
+					workspaceRoot && (
+						p.rootPath === workspaceRoot ||
+						p.rootPath.startsWith(workspaceRoot) ||
+						workspaceRoot.startsWith(p.rootPath)
+					)
+				);
+
+				log.appendLine(`  Matched project: ${project ? project.rootPath : '(none)'}`);
+				log.appendLine(`  modules: ${project?.modules.length ?? 0}`);
+				log.appendLine(`  themes:  ${project?.themes.length ?? 0}`);
+
 				const modules = project?.modules ?? [];
 				const themes = project?.themes ?? [];
 
 				const answers = await WizardRunner.run(template, uri.fsPath, modules, themes);
 				if (!answers) {
-					return; // user cancelled
+					return;
 				}
 
 				const ctx = buildContext(answers);
-				const outputSubdir = Handlebars.compile(template.outputPath)(ctx);
+
+				log.appendLine(`  ctx keys: ${Object.keys(ctx).join(', ')}`);
+				log.appendLine(`  outputPath template: ${template.outputPath}`);
+
+				const outputSubdir = engine.renderString(template.outputPath, ctx);
+
+				log.appendLine(`  outputSubdir: ${outputSubdir}`);
+
 				const outputDir = path.join(uri.fsPath, outputSubdir);
 
 				const confirmed = await vscode.window.showInformationMessage(
@@ -105,50 +138,72 @@ export async function activate(context: vscode.ExtensionContext) {
 
 		context.subscriptions.push(cmd);
 	}
-
-	// Initial scan
-	await projectTreeProvider.refresh();
 }
 
 export function deactivate() {
-	console.log('Magento Extension is now deactivated');
+	log.appendLine('Magento Extension deactivated');
 }
 
-// ── Context builder ───────────────────────────────────────────────────────────
-
+/**
+ * Converts raw wizard answers into a template context.
+ *
+ * Every answer key is available as-is in templates (e.g. {{themeName}}).
+ *
+ * Automatic extras — computed from answers if the relevant keys exist:
+ *   packageName + moduleName  → fullModuleName, moduleNameLower
+ *   packageName + themeName   → fullThemeName,  themeNameLower
+ *   packageName               → packageNameLower
+ *   parentTheme (with "||")   → parentTheme (name part), parentThemeComposer
+ *   dependencies (string[])   → dependencies[].moduleName / .composerName / .version
+ *   year                      → always added
+ *
+ * To add a new template: just add steps to _meta.json. No code changes needed.
+ */
 function buildContext(answers: WizardAnswers): Record<string, unknown> {
-	const pkg = answers['packageName'] as string ?? '';
-	const mod = answers['moduleName'] as string ?? '';
+	const ctx: Record<string, unknown> = { ...answers, year: new Date().getFullYear() };
 
-	const dependencies = (answers['dependencies'] as string[] ?? []).map(name => ({
-		moduleName: name,
-		composerName: toComposerName(name),
-		version: '*',
-	}));
+	const pkg = str(answers['packageName']);
+	const mod = str(answers['moduleName']);
+	const theme = str(answers['themeName']);
 
-	// parentTheme label may encode composer name: "Vendor/theme-name||composer/package"
-	const parentThemeRaw = answers['parentTheme'] as string | undefined;
-	const [parentTheme, parentThemeComposer] = parentThemeRaw
-		? parentThemeRaw.split('||')
-		: [undefined, undefined];
+	if (pkg) ctx['packageNameLower'] = pkg.toLowerCase();
+	if (pkg && mod) {
+		ctx['fullModuleName'] = `${pkg}_${mod}`;
+		ctx['moduleNameLower'] = mod.toLowerCase();
+	}
+	if (pkg && theme) {
+		ctx['fullThemeName'] = `${pkg}/${theme}`;
+		ctx['themeNameLower'] = theme.toLowerCase();
+	}
 
-	return {
-		...answers,
-		dependencies,
-		fullModuleName: `${pkg}_${mod}`,
-		packageNameLower: pkg.toLowerCase(),
-		moduleNameLower: mod.toLowerCase(),
-		year: new Date().getFullYear(),
-		parentTheme,
-		parentThemeComposer,
-	};
+	// parentTheme may be encoded as "ThemeName||composer/name" by the theme source
+	const parentRaw = str(answers['parentTheme']);
+	if (parentRaw) {
+		const [parentTheme, parentThemeComposer] = parentRaw.split('||');
+		ctx['parentTheme'] = parentTheme;
+		ctx['parentThemeComposer'] = parentThemeComposer;
+	}
+
+	// dependencies is a multi-select of module names — expand to objects
+	const deps = answers['dependencies'];
+	if (Array.isArray(deps)) {
+		ctx['dependencies'] = deps.map(name => ({
+			moduleName: name,
+			composerName: toComposerName(name),
+			version: '*',
+		}));
+	}
+
+	return ctx;
+}
+
+function str(v: unknown): string {
+	return typeof v === 'string' ? v : '';
 }
 
 function toComposerName(magentoName: string): string {
 	const [vendor, mod] = magentoName.split('_');
-	if (!mod) {
-		return magentoName.toLowerCase();
-	}
+	if (!mod) { return magentoName.toLowerCase(); }
 	const kebab = mod.replace(/([A-Z])/g, (c, ch, i) => (i ? '-' : '') + ch.toLowerCase());
 	return `${vendor.toLowerCase()}/module-${kebab}`;
 }
