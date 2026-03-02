@@ -107,7 +107,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				const outputDir = path.join(uri.fsPath, outputSubdir);
 
 				const confirmed = await vscode.window.showInformationMessage(
-					`Create "${outputSubdir}"?`,
+					`Create ${outputSubdir ? `"${outputSubdir}"` : `in current folder`}?`,
 					{ modal: true },
 					'Create'
 				);
@@ -166,7 +166,10 @@ function buildContext(answers: WizardAnswers): Record<string, unknown> {
 	const mod = str(answers['moduleName']);
 	const theme = str(answers['themeName']);
 
-	if (pkg) ctx['packageNameLower'] = pkg.toLowerCase();
+	if (pkg) {
+		ctx['packageNameLower'] = pkg.toLowerCase();
+	}
+
 	if (pkg && mod) {
 		ctx['fullModuleName'] = `${pkg}_${mod}`;
 		ctx['moduleNameLower'] = mod.toLowerCase();

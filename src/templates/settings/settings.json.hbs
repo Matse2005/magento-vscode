@@ -1,0 +1,130 @@
+{
+    // ─── Editor Defaults (Magento 2 base) ────────────────────────────────────────
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "editor.rulers": [80, 120],
+    "editor.wordWrap": "off",
+    "files.eol": "\n",
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "files.trimFinalNewlines": true,
+
+    // ─── Formatter: Prettier as default ──────────────────────────────────────────
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+
+    // ─── PHP Intelephense ────────────────────────────────────────────────────────
+    // Keep Intelephense for intellisense/analysis but NOT formatting
+    "intelephense.format.enable": false,
+
+    // ─── PHP CS Fixer (junstyle.php-cs-fixer) ────────────────────────────────────
+    // Handles formatting — respects empty body braces on separate lines (PSR-12)
+    "php-cs-fixer.onsave": true,
+    "php-cs-fixer.executablePath": "${workspaceFolder}/vendor/bin/php-cs-fixer",
+    "php-cs-fixer.rules": {
+        "@PSR12": true,
+        "braces_position": {
+            "functions_opening_brace": "same_line",
+            "anonymous_functions_opening_brace": "same_line",
+            "classes_opening_brace": "same_line",
+            "anonymous_classes_opening_brace": "same_line",
+            "control_structures_opening_brace": "same_line"
+        },
+        "single_blank_line_before_namespace": true,
+        "no_extra_blank_lines": true,
+        "function_declaration": {
+            "closure_fn_spacing": "none"
+        }
+    },
+    "php-cs-fixer.formatHtml": false,
+    "php-cs-fixer.documentFormattingProvider": true,
+    "[php]": {
+        "editor.defaultFormatter": "junstyle.php-cs-fixer",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.rulers": [120],
+        "editor.formatOnSave": true
+    },
+
+    // ─── JavaScript ──────────────────────────────────────────────────────────────
+    // Max line length: recommended 80, hard limit 120 (Magento JS standard)
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.rulers": [80, 120],
+        "editor.formatOnSave": true
+    },
+
+    // ─── LESS ─────────────────────────────────────────────────────────────────────
+    // Magento uses LESS; 4-space indent, single quotes
+    "[less]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.rulers": [120],
+        "editor.formatOnSave": true
+    },
+
+    // ─── CSS ──────────────────────────────────────────────────────────────────────
+    "[css]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.rulers": [120],
+        "editor.formatOnSave": true
+    },
+
+    // ─── HTML / PHTML ────────────────────────────────────────────────────────────
+    // 4-space indent, max 120 chars, self-close void elements
+    "[html]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.rulers": [120],
+        "editor.formatOnSave": true
+    },
+    "files.associations": {
+        "*.phtml": "php"
+    },
+
+    // ─── XML / DI / Layout ────────────────────────────────────────────────────────
+    "[xml]": {
+        "editor.defaultFormatter": "redhat.vscode-xml",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.rulers": [120],
+        "editor.formatOnSave": true
+    },
+
+    // ─── JSON ─────────────────────────────────────────────────────────────────────
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 4,
+        "editor.formatOnSave": true
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 4,
+        "editor.formatOnSave": true
+    },
+
+    // ─── PHP CodeSniffer (requires shevaua.phpcs extension) ──────────────────────
+    "phpcs.enable": true,
+    "phpcs.standard": "Magento2",
+    // If the global phpcs isn't picking up the Magento2 standard, point directly:
+    // "phpcs.executablePath": "${workspaceFolder}/vendor/bin/phpcs",
+    // "phpcs.standard": "${workspaceFolder}/vendor/magento/magento-coding-standard/Magento2/ruleset.xml",
+
+    // ─── ESLint (Magento JS uses ESLint) ─────────────────────────────────────────
+    "eslint.enable": true,
+    "eslint.validate": ["javascript"],
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+
+    // ─── Trim / whitespace helpers ───────────────────────────────────────────────
+    "editor.renderWhitespace": "boundary",
+    "editor.showFoldingControls": "always",
+}

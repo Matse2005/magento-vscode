@@ -2,7 +2,7 @@
   "name": "magento-vscode",
   "displayName": "Magento VSCode",
   "description": "VSCode Plugin for better Magento 2 development workflow.",
-  "version": "0.0.8",
+  "version": "0.0.10",
   "publisher": "MatseVH",
   "repository": {
     "url": "https://github.com/matse2005/magento-vscode",
@@ -46,6 +46,10 @@
         "title": "Magento: Create Module"
       },
       {
+        "command": "magento.createSettings",
+        "title": "Magento: Create VSCode settings.json"
+      },
+      {
         "command": "magento.createTheme",
         "title": "Magento: Create Theme"
       }
@@ -60,8 +64,18 @@
       ],
       "explorer/context": [
         {
+          "command": "magento.createLaunch",
+          "when": "h",
+          "group": "magento@1"
+        },
+        {
           "command": "magento.createModule",
           "when": "explorerResourceIsFolder && resourcePath =~ /.*[/\\\\]app[/\\\\]code$/",
+          "group": "magento@1"
+        },
+        {
+          "command": "magento.createSettings",
+          "when": "explorerResourceIsFolder && resourcePath =~ /.*[/\\\\].vscode$/",
           "group": "magento@1"
         },
         {

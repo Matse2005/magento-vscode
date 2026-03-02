@@ -1,0 +1,11 @@
+{
+  "id": "settings",
+  "label": "Magento: Create VSCode settings.json",
+  "command": "magento.createSettings",
+  "contextMenu": {
+    "when": "explorerResourceIsFolder && resourcePath =~ /.*[/\\\\].vscode$/",
+    "group": "magento@1"
+  },
+  "steps": [],
+  "outputPath": ""
+}
