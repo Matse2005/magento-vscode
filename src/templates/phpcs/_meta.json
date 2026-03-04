@@ -1,0 +1,11 @@
+{
+  "id": "phpcs",
+  "label": "Magento: phpcs.xml no code docs",
+  "command": "magento.createPhpcs",
+  "contextMenu": {
+    "when": "explorerResourceIsFolder && resourcePath =~ /.$/",
+    "group": "magento@1"
+  },
+  "steps": [],
+  "outputPath": "."
+}

@@ -46,6 +46,10 @@
         "title": "Magento: Create Module"
       },
       {
+        "command": "magento.createPhpcs",
+        "title": "Magento: phpcs.xml no code docs"
+      },
+      {
         "command": "magento.createSettings",
         "title": "Magento: Create VSCode settings.json"
       },
@@ -66,6 +70,11 @@
         {
           "command": "magento.createModule",
           "when": "explorerResourceIsFolder && resourcePath =~ /.*[/\\\\]app[/\\\\]code$/",
+          "group": "magento@1"
+        },
+        {
+          "command": "magento.createPhpcs",
+          "when": "explorerResourceIsFolder && resourcePath =~ /.$/",
           "group": "magento@1"
         },
         {
